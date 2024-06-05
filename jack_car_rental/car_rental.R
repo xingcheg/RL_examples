@@ -57,8 +57,7 @@ prob_rent <- function(current, lambda){
 ########## probability of # of cars at night for one location ##########
 prob_end <- function(current, lambda, p_rent){
   p_end <- rep(0, 21)
-  p_rent <- 
-    p_rent_rev <- p_rent[length(p_rent):1]
+  p_rent_rev <- p_rent[length(p_rent):1]
   for (j in 0:current){ ## j is the number of cars after rent
     if (j==20){
       p <- 1
