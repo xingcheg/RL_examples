@@ -250,6 +250,6 @@ o <- policy_iter(gamma=0.9, policy0=policy0)
 
 Visualize the value function under the optimal policy.
 ```{r,   fig.height=5, fig.width=6}
-print(plot_policy(c(o$V_mat), title="Value Function Under Optimal Policy", 
-                  if_policy=FALSE))
+library(plotly)
+plot_ly(type = 'surface', x=~0:20, y=~0:20, z=~o$V_mat)
 ```
