@@ -1,6 +1,7 @@
 ##############################################################
 ### The R code for the Blackjack example (example 5.1)
 ##############################################################
+library(ggplot2)
 source("generate_blackjack_episode.R")
 
 ############# Simulating the game (with exploring starting) ################
