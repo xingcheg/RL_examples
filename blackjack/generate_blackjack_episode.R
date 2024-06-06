@@ -66,12 +66,12 @@ initial_check <- function(x1, x2){
 }
 
 ## player's turn
-player_round <- function(x, y, policy_player){
+player_round <- function(x, y, policy_player, ref){
   MDP <- NULL
   while (1){
     s <- count(x)
     ace <- (1%in%x)
-    a <- policy_player(s, y, ace)
+    a <- policy_player(s, y, ace, ref)
     MDP <- rbind(MDP, c(s, y, ace, a))
     if (a==1){
       x <- c(x, deal())
@@ -114,7 +114,7 @@ final_check <- function(x1, x2){
 }
 
 ## play game (one episode) 
-play_blackjack <- function(policy_player){
+play_blackjack <- function(policy_player, ref=NULL){
   ## deal cards
   x1 <- c(deal(), deal()) # dealer
   x2 <- c(deal(), deal()) # player
@@ -124,7 +124,7 @@ play_blackjack <- function(policy_player){
     return (list(r=out1, dealer=x1, player=x2, class="blackjack", MDP=NULL))
   } else {
     ## player's turn
-    out2 <- player_round(x=x2, y=x1[1], policy_player)
+    out2 <- player_round(x=x2, y=x1[1], policy_player, ref)
     x2 <- out2$x
     MDP <- out2$MDP
     if (check_bust(x2)){ ## check player goes bust or not
@@ -143,7 +143,7 @@ play_blackjack <- function(policy_player){
 }
 
 ## player's policy (we can change it)
-policy_player_my <- function(s, y, ace){
+policy_player_my <- function(s, y=NULL, ace=NULL, ref=NULL){
   #s: count of player's cards; 
   #y: dealer's first card; 
   #ace: [true/false] whether player have usable ace).
@@ -155,7 +155,7 @@ policy_player_my <- function(s, y, ace){
 }
 
 ## player's policy (random actions with p=0.5)
-policy_player_random <- function(s, y, ace){
+policy_player_random <- function(s=NULL, y=NULL, ace=NULL, ref=NULL){
   #s: count of player's cards; 
   #y: dealer's first card; 
   #ace: [true/false] whether player have usable ace).
@@ -163,7 +163,7 @@ policy_player_random <- function(s, y, ace){
 }
 
 ## player's policy (optimal based on the book)
-policy_player_optimal <- function(s, y, ace){
+policy_player_optimal <- function(s, y, ace, ref=NULL){
   #s: count of player's cards; 
   #y: dealer's first card; 
   #ace: [true/false] whether player have usable ace).
@@ -187,42 +187,40 @@ policy_player_optimal <- function(s, y, ace){
 
 
 
-
-
-
 #################### run for one episode ####################
-# play_blackjack(policy_player=policy_player)
+# play_blackjack(policy_player=policy_player_my)
 
 
 
 # ############## compare three different policy ##############
-# N_mc <- 2e5
+# N <- 2e5
 # 
-# ##
-# R1 <- rep(0, N_mc)
-# for (i in 1:N_mc){
+# ## random
+# R1 <- rep(0, N)
+# for (i in 1:N){
 #   episode <- play_blackjack(policy_player=policy_player_random)
 #   R1[i] <- episode$r
 # }
-# table(R1) / N_mc
+# table(R1) / N
 # mean(R1)
 # 
-# ##
-# R2 <- rep(0, N_mc)
-# for (i in 1:N_mc){
+# ## not bad
+# R2 <- rep(0, N)
+# for (i in 1:N){
 #   episode <- play_blackjack(policy_player=policy_player_my)
 #   R2[i] <- episode$r
 # }
-# table(R2) / N_mc
+# table(R2) / N
 # mean(R2)
 # 
-# ##
-# R3 <- rep(0, N_mc)
-# for (i in 1:N_mc){
+# ## good
+# R3 <- rep(0, N)
+# for (i in 1:N){
 #   episode <- play_blackjack(policy_player=policy_player_optimal)
 #   R3[i] <- episode$r
 # }
-# table(R3) / N_mc
+# table(R3) / N
 # mean(R3)
+
 
 
