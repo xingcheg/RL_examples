@@ -171,7 +171,7 @@ pre code {
 </div>
 
 
-<p>This .Rmd file use the Blackjack example (example 5.1 in the RL book) to show illustrate Monte Carlo method for pursuing optimal policy.</p>
+<p>This .Rmd file use the Blackjack example (example 5.1 in the RL book) to illustrate Monte Carlo method for pursuing optimal policy.</p>
 <p>Different from the book, in this file, the dealer’s policy is: <strong>stick</strong> if <span class="math display">\[\text{dealer sum} \ge 18 \quad \mbox{or} \quad \text{dealer sum} = 17 \ \ \mbox{with no ace}.\]</span></p>
 <p>According to the book, the state of the MDP is: <span class="math display">\[\text{state} =(\text{player sum}, \ \text{dealer showing}, \ \text{usable ace}),\]</span> We only need to evaluate <span class="math display">\[12 \le \text{player sum} \le 20.\]</span></p>
 <p>This is because when <span class="math inline">\(\text{player sum} \le 11\)</span>, we always hit; when <span class="math inline">\(\text{player sum} = 21\)</span>, we always stick.</p>
@@ -297,9 +297,9 @@ for (i in 1:N){
 table(R1) / N</code></pre>
 <pre><code>## R1
 ##       -1        0        1 
-## 0.656976 0.038836 0.304188</code></pre>
+## 0.656802 0.038878 0.304320</code></pre>
 <pre class="r"><code>mean(R1)</code></pre>
-<pre><code>## [1] -0.352788</code></pre>
+<pre><code>## [1] -0.352482</code></pre>
 <pre class="r"><code>## dealer
 R2 &lt;- rep(0, N)
 for (i in 1:N){
@@ -309,9 +309,9 @@ for (i in 1:N){
 table(R2) / N</code></pre>
 <pre><code>## R2
 ##       -1        0        1 
-## 0.494858 0.095422 0.409720</code></pre>
+## 0.496068 0.096032 0.407900</code></pre>
 <pre class="r"><code>mean(R2)</code></pre>
-<pre><code>## [1] -0.085138</code></pre>
+<pre><code>## [1] -0.088168</code></pre>
 <pre class="r"><code>## RL book
 R3 &lt;- rep(0, N)
 for (i in 1:N){
@@ -321,9 +321,9 @@ for (i in 1:N){
 table(R3) / N</code></pre>
 <pre><code>## R3
 ##       -1        0        1 
-## 0.485574 0.080812 0.433614</code></pre>
+## 0.485590 0.080722 0.433688</code></pre>
 <pre class="r"><code>mean(R3)</code></pre>
-<pre><code>## [1] -0.05196</code></pre>
+<pre><code>## [1] -0.051902</code></pre>
 <pre class="r"><code>## MC explore start
 R4 &lt;- rep(0, N)
 for (i in 1:N){
@@ -334,9 +334,9 @@ for (i in 1:N){
 table(R4) / N</code></pre>
 <pre><code>## R4
 ##       -1        0        1 
-## 0.484104 0.080560 0.435336</code></pre>
+## 0.484306 0.080964 0.434730</code></pre>
 <pre class="r"><code>mean(R4)</code></pre>
-<pre><code>## [1] -0.048768</code></pre>
+<pre><code>## [1] -0.049576</code></pre>
 <pre class="r"><code>## MC epsilon-soft
 R5 &lt;- rep(0, N)
 for (i in 1:N){
@@ -347,9 +347,10 @@ for (i in 1:N){
 table(R5) / N</code></pre>
 <pre><code>## R5
 ##       -1        0        1 
-## 0.482826 0.082200 0.434974</code></pre>
+## 0.483330 0.082648 0.434022</code></pre>
 <pre class="r"><code>mean(R5)</code></pre>
-<pre><code>## [1] -0.047852</code></pre>
+<pre><code>## [1] -0.049308</code></pre>
+<p>The results tell us: <strong>Never play Blackjack alone with dealer especially if you cannot remember cards or there are too many decks of cards!</strong></p>
 </div>
 
 

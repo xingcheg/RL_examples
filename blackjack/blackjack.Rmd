@@ -5,7 +5,7 @@ date: "6/6/2024"
 output: html_document
 ---
 
-This .Rmd file use the Blackjack example (example 5.1 in the RL book) to show illustrate Monte Carlo method for pursuing optimal policy. 
+This .Rmd file use the Blackjack example (example 5.1 in the RL book) to illustrate Monte Carlo method for pursuing optimal policy. 
 
 
 Different from the book, in this file, the dealer's policy is: **stick** if 
@@ -205,3 +205,5 @@ mean(R5)
 
 ```
 
+
+The results tell us: **Never play Blackjack alone with dealer especially if you cannot remember cards or there are too many decks of cards!**
