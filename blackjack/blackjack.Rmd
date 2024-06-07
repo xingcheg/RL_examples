@@ -1,0 +1,207 @@
+---
+title: "Blackjack"
+author: "Xingche Guo"
+date: "6/6/2024"
+output: html_document
+---
+
+This .Rmd file use the Blackjack example (example 5.1 in the RL book) to show illustrate Monte Carlo method for pursuing optimal policy. 
+
+
+Different from the book, in this file, the dealer's policy is: **stick** if 
+$$\text{dealer sum} \ge 18 \quad \mbox{or} \quad \text{dealer sum} = 17 \ \ \mbox{with no ace}.$$
+
+According to the book, the state of the MDP is:
+$$\text{state} =(\text{player sum}, \ \text{dealer showing}, \ \text{usable ace}),$$
+We only need to evaluate 
+$$12 \le \text{player sum} \le 20.$$ 
+
+This is because when $\text{player sum} \le 11$, we always hit; when $\text{player sum} = 21$, we always stick.
+
+
+## Monte Carlo method with exploring start 
+
+To evaluate $Q(s, a)$, note that we are unlikely to evaluate every state-action pair 
+for an deterministic policy. Therefore, we **randomly explore all possible states/actions at the beginning of the game** to ensure observations for all the state-action pairs. 
+
+To do that, we randomly generate the initial (three-dimensional) states from a uniform distribution to ensure each state have enough observations. We randomly simulate the first action to be **hit/stick** with equal probabilities and ther rest actions following the current policy to be evaluated.
+
+
+Suppose $\widehat{Q}^{(l)}(s,a)$ is the Monte Carlo estimate of $Q(s,a)$ at the $l$-th iteration. For the stability of the algorithm, we let
+$$
+\widetilde{Q}^{(l+1)}(s,a) \leftarrow \alpha\widehat{Q}^{(l+1)}(s,a) + (1-\alpha)\widetilde{Q}^{(l)}(s,a).  \quad\quad(1)
+$$
+Then we improve the (deterministic) policy by
+$$
+\pi_l(a \mid s) = \mbox{argmax}_a \widetilde{Q}^{(l)}(s,a).
+$$
+
+The optimal policy is shown below:
+
+```{r   fig.height=6,  fig.width=10}
+library(ggplot2)
+source("generate_blackjack_episode.R")
+policy_explore_start <- readRDS("policy_explore_start.rds")
+
+####################### visualize optimal policy #################
+ggplot(data = policy_explore_start) + 
+  geom_tile(aes(x = count, y = dealer_card, fill = as.factor(a_new)), 
+            colour = "black", alpha=0.7) +
+  facet_wrap(~ace, ncol=2, labeller = label_both) + 
+  scale_fill_discrete(name="Policy") + 
+  xlab("Player sum") + 
+  ylab("Dealer showing") +
+  ggtitle("Monte Carlo Exploring Start") + 
+  theme_classic(base_size = 20)
+
+```
+
+
+
+
+## Monte Carlo method with $\epsilon$-soft policy
+
+Another way to ensure observations for all the state-action pairs, is to use stochastic policies. The $\epsilon$-soft version of policy $\pi(a \mid s)$ is
+$$
+\pi_{\epsilon}(a \mid s) = (1 - \epsilon) \pi(a \mid s) + \epsilon \frac{1}{| \mathcal{A}|}.
+$$
+Still, we generate the initial (three-dimensional) states from a uniform distribution to ensure each state have enough observations. At the same time, we apply (1) again for the stability of the algorithm. Using an $\epsilon$-soft policy is guaranteed to increase the value function (referred to the RL book).
+
+The optimal policy (deterministic version) is shown below:
+
+```{r   fig.height=6,  fig.width=10}
+policy_epsilon_soft <- readRDS("policy_epsilon_soft.rds")
+
+####################### visualize optimal policy #################
+ggplot(data = policy_epsilon_soft) + 
+  geom_tile(aes(x = count, y = dealer_card, fill = as.factor(a_new)), 
+            colour = "black", alpha=0.7) +
+  facet_wrap(~ace, ncol=2, labeller = label_both) + 
+  scale_fill_discrete(name="Policy") + 
+  xlab("Player sum") + 
+  ylab("Dealer showing") +
+  ggtitle("Monte Carlo Exploring Start") + 
+  theme_classic(base_size = 20)
+
+```
+
+
+## Compare different policies
+
+```{r}
+
+## function for any deterministic policy.
+policy_player_deterministic <- function(s, y, ace, ref){
+  if (s==21){
+    return (0)
+  } else if (s <=11) {
+    return (1)
+  } else {
+    idx <- which(s==ref$count & y==ref$dealer_card & ref$ace==ace)
+    return(ref$a_new[idx])
+  }
+}
+
+
+## player's policy (random actions with p=0.5)
+policy_player_random <- function(s=NULL, y=NULL, ace=NULL, ref=NULL){
+  #s: count of player's cards; 
+  #y: dealer's first card; 
+  #ace: [true/false] whether player have usable ace).
+  return(rbinom(1, 1, 0.5))
+}
+
+
+## player's policy (same as dealer)
+policy_player_dealer <- function(s, y=NULL, ace, ref=NULL){
+  #s: count of player's cards; 
+  #y: dealer's first card; 
+  #ace: [true/false] whether player have usable ace).
+  if (s >= 18){
+    return (0)
+  } else if ( (s==17) & (ace==0)){
+    return (0)
+  } else {
+    return (1)
+  }
+}
+
+## player's policy (optimal based on the book)
+policy_player_optimal <- function(s, y, ace, ref=NULL){
+  #s: count of player's cards; 
+  #y: dealer's first card; 
+  #ace: [true/false] whether player have usable ace).
+  if (ace){
+    if (y>=2 & y<=8){
+      a <- ifelse(s>=18, 0, 1)
+    } else {
+      a <- ifelse(s>=19, 0, 1)
+    }
+  } else {
+    if (y<=1 | y>=7){
+      a <- ifelse(s>=16, 0, 1)
+    } else if (y>=2 & y<=3){
+      a <- ifelse(s>=13, 0, 1)
+    } else {
+      a <- ifelse(s>=12, 0, 1)
+    }
+  }
+  return(a)
+}
+
+
+
+############## compare different policies ##############
+N <- 5e5
+
+## random
+R1 <- rep(0, N)
+for (i in 1:N){
+  episode <- play_blackjack(policy_player=policy_player_random)
+  R1[i] <- episode$r
+}
+table(R1) / N
+mean(R1)
+
+## dealer
+R2 <- rep(0, N)
+for (i in 1:N){
+  episode <- play_blackjack(policy_player=policy_player_my)
+  R2[i] <- episode$r
+}
+table(R2) / N
+mean(R2)
+
+## RL book
+R3 <- rep(0, N)
+for (i in 1:N){
+  episode <- play_blackjack(policy_player=policy_player_optimal)
+  R3[i] <- episode$r
+}
+table(R3) / N
+mean(R3)
+
+
+## MC explore start
+R4 <- rep(0, N)
+for (i in 1:N){
+  episode <- play_blackjack(policy_player=policy_player_deterministic, 
+                            policy_explore_start)
+  R4[i] <- episode$r
+}
+table(R4) / N
+mean(R4)
+
+
+## MC epsilon-soft
+R5 <- rep(0, N)
+for (i in 1:N){
+  episode <- play_blackjack(policy_player=policy_player_deterministic, 
+                            policy_epsilon_soft)
+  R5[i] <- episode$r
+}
+table(R5) / N
+mean(R5)
+
+```
+
