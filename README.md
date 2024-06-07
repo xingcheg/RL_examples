@@ -8,3 +8,4 @@ R code for some examples in the book: "Reinforcement Learning: An Introduction (
 **blackjack**: Include R codes for Monte Carlo methods (Chapter 5) with an example of Blackjack game (example 5.1).
 - "generate_blackjack_episode.R": functions to generate one blackjack episode.
 - "find_policy_explore_start.R": find optimal policy via Monte Carlo with Exploring Start.
+- "find_policy_epsilon_soft.R": find optimal policy via Monte Carlo with epsilon-soft policy (i.e. stochastic epsilon-greedy policy).
