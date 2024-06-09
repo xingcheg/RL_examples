@@ -12,3 +12,7 @@ R code for some examples in the book: "Reinforcement Learning: An Introduction (
 - **find_policy_explore_start.R**: find optimal policy via Monte Carlo with Exploring Start.
 - **find_policy_epsilon_soft.R**: find optimal policy via Monte Carlo with epsilon-soft policy (i.e. stochastic epsilon-greedy policy).
 - **blackjack.html**: The R markdown output for the Blackjack problem and solutions.
+
+
+**gridworld_windy**: R code for Temporal-Difference Learning ,i.e., SARSA, Q-learning, etc (Chapter 6) with an example of Windy Gridworld (example 6.5).
+- **gridworld_windy.html**: The R markdown output for the Windy Gridworld problem and solutions.
