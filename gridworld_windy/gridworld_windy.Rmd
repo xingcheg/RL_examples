@@ -1,0 +1,336 @@
+---
+title: "Windy Gridworld"
+author: "Xingche Guo"
+date: "6/9/2024"
+output: html_document
+---
+
+This .Rmd file use the Windy Gridworld example (example 6.5 in the RL book) to illustrate Temporal-difference learning (i.e. SARSA, Q-learning, double Q-learning). 
+
+## Problem notations
+Let states $s = (s_1, s_2)$ with $(s_1 = 1, \dots, 7, s_2 = 1, \dots, 10)$. Actions $a = 1,2,3,4$ denote north, south, west, and east, respectively. The reward $r \equiv -1$.
+
+## R code 
+
+### Formulate MDP
+```{r}
+###############################################################
+### The R code for the Windy Gridworld example (example 6.5)
+###############################################################
+library(ggplot2)
+
+########## global parameters ##########
+## the strength of wind at each column
+windy <- c(0,0,0,1,1,1,2,2,1,0)
+
+##### states (7x10 grid), s = (s1, s2) 
+##### actions, a = {1:north. 2:south, 3:west, 4:east}
+
+## MDP function to compute [s' | s, a]
+## need (1 <= s[1] <= 7; 1 <= s[2] <= 10)
+MDP <- function(s, a){
+  w <- windy[s[2]]
+  if (a==1) {
+    s[1] <- s[1] + 1 + w
+  }
+  if (a==2) {
+    s[1] <- s[1] - 1 + w
+  }
+  if (a==3){
+    s[1] <- s[1] + w
+    s[2] <- s[2] - 1
+  }
+  if (a==4){
+    s[1] <- s[1] + w
+    s[2] <- s[2] + 1
+  }
+  s[1] <- min(max(s[1], 1), 7)
+  s[2] <- min(max(s[2], 1), 10)
+  return(s)
+}
+
+### epsilon-greedy policy
+policy <- function(s, Q, epsilon){
+  flag <- rbinom(1, 1, 1-epsilon)
+  a1 <- which.max( Q[s[1],s[2],] )
+  a2 <- sample(4, 1)
+  a <- ifelse(flag==1, a1, a2)
+  return(a)
+}
+```
+
+
+### SARSA learning
+
+Choose $A$ from $S$ using policy derived from $Q$ (e.g., $\epsilon$-greedy). Update
+$$
+Q\left(S_{t}, A_{t}\right) \leftarrow Q\left(S_{t}, A_{t}\right)+\alpha\left[R_{t+1}+\gamma Q\left(S_{t+1}, A_{t+1}\right)-Q\left(S_{t}, A_{t}\right)\right]
+$$
+
+```{r}
+################################# SARSA #######################################
+### SARSA learning for one episode
+sarsa_one_episode <- function(Q, alpha, epsilon, start, goal){
+  G <- 0
+  s <- start
+  a <- policy(s, Q, epsilon)
+  while(1){
+    r <- -1
+    G <- G + r
+    s1 <- MDP(s, a)
+    a1 <- policy(s1, Q, epsilon)
+    qa <- Q[s[1], s[2], a]
+    qb <- Q[s1[1], s1[2], a1]
+    Q[s[1], s[2], a] <- qa + alpha * (r + qb - qa)
+    if ((s1[1]==goal[1]) & (s1[2]==goal[2]) ){
+      break
+    } else {
+      s <- s1
+      a <- a1
+    }
+  }
+  return(list(Q=Q, G=G))
+}
+
+### SARSA learning for n episodes
+sarsa_n_episode <- function(n, alpha, epsilon, start=c(4,1), goal=c(4,8)){
+  Q <- array(0, dim = c(7, 10, 4))
+  G <- rep(0, n)
+  for (i in 1:n){
+    #cat(i, "\t")
+    out <- sarsa_one_episode(Q, alpha, epsilon, start, goal)
+    G[i] <- out$G
+    Q <- out$Q
+  }
+  return(list(Q=Q, G=G))
+}
+```
+
+
+
+### Check effects of $\epsilon$-greedy policy and learning rate $\alpha$
+```{r,    fig.width=8, fig.height=10}
+### final solution path
+find_path <- function(Q, start=c(4,1), goal=c(4,8), visualize = TRUE, ...){
+  s <- start
+  s_all <- s
+  i <- 0
+  while(i < 50){
+    i <- i + 1
+    a <- which.max(Q[s[1], s[2], ])
+    s <- MDP(s, a)
+    s_all <- rbind(s_all, s)
+    if ((s[1]==goal[1]) & (s[2]==goal[2]) ){
+      break
+    } 
+  }
+  ## plot
+  if (visualize){
+    plot(1, cex=1e-2, xlim = c(1,10), ylim = c(1,7), ...)
+    abline(h = (1:7)-0.5, v=(1:10)-0.5, lty=2)
+    lines(x = s_all[,2], y = s_all[,1], type = "b", pch = 16)
+    points(x = start[2], y = start[1], cex = 2, col = 2, pch=16)
+    points(x = goal[2], y = goal[1], cex = 2, col = 4, pch=16)
+  }
+  return(s_all)
+}
+
+
+
+################################# run ####################################
+n <- 2500
+###### effect of epsilon #####
+set.seed(1)
+out_e1 <- sarsa_n_episode(n, alpha=0.5, epsilon=0.2)
+out_e2 <- sarsa_n_episode(n, alpha=0.5, epsilon=0.1)
+out_e3 <- sarsa_n_episode(n, alpha=0.5, epsilon=0.01)
+
+par(mfrow = c(3,2))
+##
+plot( log(-out_e1$G), main = "epsilon = 0.2, alpha = 0.5")
+s_e1 <- find_path(out_e1$Q, main = "epsilon = 0.2, alpha = 0.5")
+##
+plot( log(-out_e2$G), main = "epsilon = 0.1, alpha = 0.5")
+s_e2 <- find_path(out_e2$Q, main = "epsilon = 0.1, alpha = 0.5")
+##
+plot( log(-out_e3$G), main = "epsilon = 0.01, alpha = 0.5")
+s_e3 <- find_path(out_e3$Q, main = "epsilon = 0.01, alpha = 0.5")
+par(mfrow = c(1,1))
+
+###### effect of alpha #####
+set.seed(1)
+out_a1 <- sarsa_n_episode(n, alpha=0.5, epsilon=0.01)
+out_a2 <- sarsa_n_episode(n, alpha=0.2, epsilon=0.01)
+out_a3 <- sarsa_n_episode(n, alpha=0.1, epsilon=0.01)
+
+par(mfrow = c(3,2))
+##
+plot( log(-out_a1$G), main = "epsilon = 0.01, alpha = 0.5")
+s_a1 <- find_path(out_a1$Q, main = "epsilon = 0.01, alpha = 0.5")
+##
+plot( log(-out_a2$G), main = "epsilon = 0.01, alpha = 0.2")
+s_a2 <- find_path(out_a2$Q, main = "epsilon = 0.01, alpha = 0.2")
+##
+plot( log(-out_a3$G), main = "epsilon = 0.01, alpha = 0.1")
+s_a3 <- find_path(out_a3$Q, main = "epsilon = 0.01, alpha = 0.1")
+par(mfrow = c(1,1))
+
+```
+
+
+
+
+
+### Q-learning
+
+Choose $A$ from $S$ using policy derived from $Q$ (e.g., $\epsilon$-greedy). Update
+$$
+Q\left(S_{t}, A_{t}\right) \leftarrow Q\left(S_{t}, A_{t}\right)+\alpha\left[R_{t+1}+\gamma \max _{a} Q\left(S_{t+1}, a\right)-Q\left(S_{t}, A_{t}\right)\right]
+$$
+
+```{r}
+################################# Q-learning #######################################
+### Q-learning for one episode
+q_learning_one_episode <- function(Q, alpha, epsilon, start, goal){
+  G <- 0
+  s <- start
+  a <- policy(s, Q, epsilon)
+  while(1){
+    r <- -1
+    G <- G + r
+    s1 <- MDP(s, a)
+    qa <- Q[s[1], s[2], a]
+    qb <- max(Q[s1[1], s1[2], ])
+    Q[s[1], s[2], a] <- qa + alpha * (r + qb - qa)
+    if ((s1[1]==goal[1]) & (s1[2]==goal[2]) ){
+      break
+    } else {
+      s <- s1
+      a <- policy(s1, Q, epsilon)
+    }
+  }
+  return(list(Q=Q, G=G))
+}
+
+### Q-learning for n episodes
+q_learning_n_episode <- function(n, alpha, epsilon, start=c(4,1), goal=c(4,8)){
+  Q <- array(0, dim = c(7, 10, 4))
+  G <- rep(0, n)
+  for (i in 1:n){
+    #cat(i, "\t")
+    out <- q_learning_one_episode(Q, alpha, epsilon, start, goal)
+    G[i] <- out$G
+    Q <- out$Q
+  }
+  return(list(Q=Q, G=G))
+}
+
+```
+
+
+
+### Double Q-learning
+
+Choose $A$ from $S$ using policy derived from $Q_1+Q_2$ (e.g., $\epsilon$-greedy). With $0.5$ probabilility:
+$$
+Q_{1}\left(S_{t}, A_{t}\right) \leftarrow Q_{1}\left(S_{t}, A_{t}\right)+\alpha\left[R_{t+1}+\gamma Q_{2}\left(S_{t+1}, \underset{a}{\arg \max } Q_{1}\left(S_{t+1}, a\right)\right)-Q_{1}\left(S_{t}, A_{t}\right)\right]
+$$
+else:
+$$
+Q_{2}\left(S_{t}, A_{t}\right) \leftarrow Q_{2}\left(S_{t}, A_{t}\right)+\alpha\left[R_{t+1}+\gamma Q_{1}\left(S_{t+1}, \underset{a}{\arg \max } Q_{2}\left(S_{t+1}, a\right)\right)-Q_{2}\left(S_{t}, A_{t}\right)\right]
+$$
+
+```{r}
+################################# double Q-learning #######################################
+### double Q-learning for one episode
+double_q_one_episode <- function(Q1, Q2,alpha, epsilon, start, goal){
+  G <- 0
+  s <- start
+  a <- policy(s, Q1 + Q2, epsilon)
+  while(1){
+    r <- -1
+    G <- G + r
+    s1 <- MDP(s, a)
+    if (rbinom(1, 1, 0.5) == 1){
+      qa <- Q1[s[1], s[2], a]
+      a_max <- which.max(Q1[s1[1], s1[2], ])
+      qb <- Q2[s1[1], s1[2], a_max]
+      Q1[s[1], s[2], a] <- qa + alpha * (r + qb - qa)
+    } else {
+      qa <- Q2[s[1], s[2], a]
+      a_max <- which.max(Q2[s1[1], s1[2], ])
+      qb <- Q1[s1[1], s1[2], a_max]
+      Q2[s[1], s[2], a] <- qa + alpha * (r + qb - qa)
+    }
+    ##
+    if ((s1[1]==goal[1]) & (s1[2]==goal[2]) ){
+      break
+    } else {
+      s <- s1
+      a <- policy(s1, Q1 + Q2, epsilon)
+    }
+  }
+  return(list(Q1=Q1, Q2=Q2, G=G))
+}
+
+### double Q-learning for n episodes
+double_q_n_episode <- function(n, alpha, epsilon, start=c(4,1), goal=c(4,8)){
+  Q1 <- array(0, dim = c(7, 10, 4))
+  Q2 <- array(0, dim = c(7, 10, 4))
+  G <- rep(0, n)
+  for (i in 1:n){
+    #cat(i, "\t")
+    out <- double_q_one_episode(Q1, Q2, alpha, epsilon, start, goal)
+    G[i] <- out$G
+    Q1 <- out$Q1
+    Q2 <- out$Q2
+  }
+  return(list(Q=(Q1+Q2)/2, G=G))
+}
+```
+
+
+
+### Compare RL methods
+```{r,   cache=TRUE,   fig.width=10, fig.height=8}
+
+###### compare SARSA and Q-learning #####
+M <- 50
+nn <- c(100, 200, 500, 1000, 2000)
+G_sarsa <- matrix(0, M, length(nn))
+G_Q <- matrix(0, M, length(nn))
+G_double_Q <- matrix(0, M, length(nn))
+
+for (i in 1:length(nn)){
+  n <- nn[i]
+  #cat("........n = ", n, ".......\n")
+  for (j in 1:M){
+    #cat(j, "\t")
+    Q1 <- sarsa_n_episode(n, alpha=0.5, epsilon=0.01)$Q
+    Q2 <- q_learning_n_episode(n, alpha=0.5, epsilon=0.01)$Q
+    Q3 <- double_q_n_episode(n, alpha=0.5, epsilon=0.01)$Q
+    s1 <- find_path(Q1, visualize = FALSE)
+    s2 <- find_path(Q2, visualize = FALSE)
+    s3 <- find_path(Q3, visualize = FALSE)
+    G_sarsa[j,i] <- 1-nrow(s1)
+    G_Q[j,i] <- 1-nrow(s2)
+    G_double_Q[j,i] <- 1-nrow(s3)
+  }
+  cat("\n")
+}
+
+
+
+DD <- data.frame(Episode = as.factor(rep(rep(nn, each=M), 3)),
+                 Return = c(c(G_sarsa), c(G_Q), c(G_double_Q)),
+                 Methods = rep(c("SARSA", "Q-learning", "double Q-learning"), 
+                               each = M*length(nn)))
+
+ggplot(data = DD) + 
+  geom_histogram(aes(x = Return, y = ..density.., fill = Methods), alpha = 0.5) + 
+  facet_grid(Methods~Episode) + 
+  theme_bw(base_size = 18)
+
+
+
+```
