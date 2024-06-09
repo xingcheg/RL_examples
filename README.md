@@ -3,7 +3,8 @@ R code for some examples in the book: "Reinforcement Learning: An Introduction (
 
 ## Overview
 
-**jack_car_rental**: R code for Dynamic Programming (Chapter 4) with an example of Jack’s Car Rental (example 4.2).
+### jack_car_rental 
+R code for Dynamic Programming (Chapter 4) with an example of Jack’s Car Rental (example 4.2).
 - **car_rental.html**: The R markdown output for the Jack's Car Rental problem and solutions.
 
 
